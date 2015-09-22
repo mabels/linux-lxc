@@ -154,6 +154,7 @@ SAMPLE
     lxc.write
 
     lxc_read = Linux::Lxc.parse(lxc.file)
+    assert_equal lxc_read.get('#').length, 2
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').values, ['meno']
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').first.file, lxc.file
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').first.line, 2
@@ -161,6 +162,19 @@ SAMPLE
     assert_equal lxc_read.get('lxc.network.hwaddr').values, ['00:16:3e:67:03:4a']
     assert_equal lxc_read.get('lxc.network.hwaddr').first.file, incl.file
     assert_equal lxc_read.get('lxc.network.hwaddr').first.line, 2
+  end
+
+  def test_comment
+    lxc = Linux::Lxc.parse(@lxc_config)
+    assert_equal lxc.get('#').length, 42
+    assert_equal lxc.get('lxc.cgroup.devices.allow').length, 16
+    lxc.get('lxc.cgroup.devices.allow')[0].comment!
+    assert_equal lxc.get('lxc.cgroup.devices.allow').length, 15
+    assert_equal lxc.get('#').length, 43
+    lxc.get('lxc.network').comment!
+    assert_equal lxc.get('#').length, 47
+    assert_equal lxc.get('lxc.network'), nil
+
   end
 
   def test_write
