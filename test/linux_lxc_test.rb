@@ -177,6 +177,33 @@ SAMPLE
 
   end
 
+  def test_real_fname
+    lxc = Linux::Lxc.new(File.join(@temp_dir, "real_name"))
+    lxc.add("# base meno")
+    lxc.add("lxc.cgroup.devices.allow", "meno")
+    lxc.write
+    lxc.real_fname = File.join(@temp_dir, "test_name")
+    incl = Linux::Lxc.new(File.join(@temp_dir, "test_incl"))
+    incl.real_fname = File.join(@temp_dir, "real_incl")
+    lxc.add("lxc.include", incl)
+    incl.add("# include meno")
+    incl.add("lxc.network.hwaddr", '00:16:3e:67:03:4a')
+    lxc.write
+    assert_equal File.exists?(File.join(@temp_dir, "test_name")), true
+    assert_equal File.exists?(File.join(@temp_dir, "real_name")), true
+    assert_equal File.exists?(File.join(@temp_dir, "real_incl")), true
+    assert_equal File.exists?(File.join(@temp_dir, "test_incl")), false
+#    assert_raise do #Fails, no Exceptions are raised
+    begin
+      lxc = Linux::Lxc.parse(File.join(@temp_dir, "test_name"))
+      assert_equal "Doof", "Darf nie passieren"
+    rescue Exception => e
+      assert_equal e.instance_of?(Errno::ENOENT), true
+      assert_equal File.basename(e.message), "test_incl"
+    end
+#    end
+  end
+
   def test_lines
     lxc = Linux::Lxc.parse(@lxc_config)
     cnt = 0

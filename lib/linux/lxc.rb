@@ -73,13 +73,19 @@ module Linux
         end
       end
 
-      attr_reader :index, :lines
-      attr_accessor :file
+      attr_reader :index, :lines, :file
+      attr_accessor :real_fname
 
       def initialize(file, index = {})
-        @file = file
+        self.file = file
         @lines = Lines.new
         @index = index
+      end
+
+      # file is more important than real_fname
+      def file=(a)
+        @file = a
+        @real_fname = a
       end
 
       def get(key)
@@ -136,7 +142,7 @@ module Linux
       end
 
       def write
-        File.open(file, 'w') do |f|
+        File.open(real_fname, 'w') do |f|
           @lines.each do |line|
             if line.key == "lxc.include"
               line.value.write
