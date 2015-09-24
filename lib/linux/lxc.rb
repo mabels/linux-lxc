@@ -8,7 +8,7 @@ module Linux
         attr_accessor :value
         def initialize(lxc, key, value)
           @lxc = lxc
-          @line = lxc.lines.add(self).length
+          @line = lxc && lxc.lines.add(self).length
           @key = key
           @value = value
         end
@@ -32,8 +32,6 @@ module Linux
         end
       end
 
-      attr_reader :index, :lines
-      attr_accessor :file
 
       class Lines
         def initialize
@@ -74,6 +72,9 @@ module Linux
           @lines.first
         end
       end
+
+      attr_reader :index, :lines
+      attr_accessor :file
 
       def initialize(file, index = {})
         @file = file
@@ -117,6 +118,21 @@ module Linux
           @index[path] ||= Lines.new
           @index[path].add(line)
         end
+      end
+
+      def all_lines(&block)
+        @lines.each do |line|
+          block.call(line)
+          if line.value.instance_of?(Lxc)
+            line.value.all_lines(&block)
+          end
+        end
+      end
+
+      def files
+        ret = [Line.new(nil, "lxc.include", self)]
+        all_lines {|line| line.value.instance_of?(Lxc) && (ret << line) }
+        ret
       end
 
       def write

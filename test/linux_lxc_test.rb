@@ -177,6 +177,20 @@ SAMPLE
 
   end
 
+  def test_lines
+    lxc = Linux::Lxc.parse(@lxc_config)
+    cnt = 0
+    lxc.all_lines{|line| cnt+=1 }
+    assert_equal cnt, 92
+  end
+
+  def test_files
+    lxc = Linux::Lxc.parse(@lxc_config)
+    assert_equal lxc.files[0].value.file, @lxc_config
+    assert_equal File.basename(lxc.files[1].value.file), "ubuntu.common.conf"
+    assert_equal lxc.files.length, 2
+  end
+
   def test_write
     lxc = Linux::Lxc.parse(@lxc_config)
     lxc.file = "#{@lxc_config}.new"
