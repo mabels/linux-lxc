@@ -20,8 +20,8 @@ require 'linux/lxc'
 
 class LinuxLxcTest < Test::Unit::TestCase
   def setup
-    @temp_dir =  Dir.mktmpdir
-    @lxc_config = File.join(@temp_dir, "lxc.config")
+    @temp_dir = Dir.mktmpdir
+    @lxc_config = File.join(@temp_dir, 'lxc.config')
     File.write(@lxc_config, <<SAMPLE)
 # Template used to create this container: /usr/share/lxc/templates/lxc-ubuntu
 # Parameters passed to the template:
@@ -42,7 +42,7 @@ lxc.network.flags = up
 lxc.network.link = lxcbr0
 lxc.network.hwaddr = 00:16:3e:67:03:4a
 SAMPLE
-    @lxc_ubuntu_common_conf = File.join(@temp_dir, "ubuntu.common.conf")
+    @lxc_ubuntu_common_conf = File.join(@temp_dir, 'ubuntu.common.conf')
     File.write(@lxc_ubuntu_common_conf, <<SAMPLE)
 # Default pivot location
 lxc.pivotdir = lxc_putold
@@ -118,6 +118,15 @@ lxc.cgroup.devices.allow = c 10:232 rwm
 # Blacklist some syscalls which are not safe in privileged
 # containers
 lxc.seccomp = /usr/share/lxc/config/common.seccomp
+
+lxc.include = #{File.join(@temp_dir, 'empty.conf.d')}
+lxc.include = #{File.join(@temp_dir, 'common.conf.d')}
+SAMPLE
+    FileUtils.mkdir_p File.join(@temp_dir, 'empty.conf.d')
+    FileUtils.mkdir_p File.join(@temp_dir, 'common.conf.d')
+    @lxc_common_conf_d_wildcard = File.join(@temp_dir, 'common.conf.d', 'wildcard')
+    File.write(@lxc_common_conf_d_wildcard, <<SAMPLE)
+lxc.wildcard.loaded = true
 SAMPLE
   end
 
@@ -128,10 +137,14 @@ SAMPLE
   def test_reader
     lxc = Linux::Lxc.parse(@lxc_config)
 
-    assert_equal lxc.get('lxc').length, 38
+    assert_equal lxc.get('lxc').length, 41
     assert_equal lxc.get('lxc.network').length, 4
     assert_equal lxc.get('lxc.network.hwaddr').length, 1
     assert_equal lxc.get('lxc.network.murks'), nil
+
+    assert_equal lxc.get('lxc.wildcard.loaded').values[0], 'true'
+    assert_equal lxc.get('lxc.wildcard.loaded')[0].file, @lxc_common_conf_d_wildcard
+    assert_equal lxc.get('lxc.wildcard.loaded')[0].line, 1
 
     assert_equal lxc.get('lxc.cgroup.devices.allow').values[4], 'c 5:0 rwm'
     assert_equal lxc.get('lxc.cgroup.devices.allow')[4].file, @lxc_ubuntu_common_conf
@@ -142,19 +155,29 @@ SAMPLE
     assert_equal lxc.get('lxc.network.hwaddr').first.line, 18
   end
 
-
   def test_from_scratch
-    lxc = Linux::Lxc.new(File.join(@temp_dir, "base"))
-    lxc.add("# base meno")
-    lxc.add("lxc.cgroup.devices.allow", "meno")
-    incl = Linux::Lxc.new(File.join(@temp_dir, "incl"))
-    lxc.add("lxc.include", incl)
-    incl.add("# include meno")
-    incl.add("lxc.network.hwaddr", '00:16:3e:67:03:4a')
+    lxc = Linux::Lxc.file(File.join(@temp_dir, 'base.f'))
+    lxc.add('# base meno')
+    lxc.add('lxc.cgroup.devices.allow', 'meno')
+    incl = Linux::Lxc.file(File.join(@temp_dir, 'incl.f'))
+    lxc.add('lxc.include', incl)
+    incl.add('# include meno')
+    incl.add('lxc.network.hwaddr', '00:16:3e:67:03:4a')
+
+    empty_d = Linux::Lxc.directory(File.join(@temp_dir, 'scratch.empty.d'))
+    lxc.add('lxc.include', empty_d)
+
+    scratch_d = Linux::Lxc.directory(File.join(@temp_dir, 'scratch.d'))
+    lxc.add('lxc.include', scratch_d)
+
+
+    scratch_file = scratch_d.add_file(File.join(@temp_dir, 'scratch.d', 'file.f'))
+    scratch_file.add('# include scratch')
+    scratch_file.add('lxc.scratch_file', 'it_is_scratch_file')
     lxc.write
 
     lxc_read = Linux::Lxc.parse(lxc.file)
-    assert_equal lxc_read.get('#').length, 2
+    assert_equal lxc_read.get('#').length, 3
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').values, ['meno']
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').first.file, lxc.file
     assert_equal lxc_read.get('lxc.cgroup.devices.allow').first.line, 2
@@ -162,6 +185,13 @@ SAMPLE
     assert_equal lxc_read.get('lxc.network.hwaddr').values, ['00:16:3e:67:03:4a']
     assert_equal lxc_read.get('lxc.network.hwaddr').first.file, incl.file
     assert_equal lxc_read.get('lxc.network.hwaddr').first.line, 2
+
+    assert_equal lxc_read.get('lxc.scratch_file').values, ['it_is_scratch_file']
+    assert_equal lxc_read.get('lxc.scratch_file').first.file, scratch_file.file
+    assert_equal lxc_read.get('lxc.scratch_file').first.line, 2
+
+    assert_equal lxc_read.index.files.length, 3
+
   end
 
   def test_comment
@@ -174,61 +204,60 @@ SAMPLE
     lxc.get('lxc.network').comment!
     assert_equal lxc.get('#').length, 47
     assert_equal lxc.get('lxc.network'), nil
-
   end
 
   def test_real_fname
-    lxc = Linux::Lxc.new(File.join(@temp_dir, "real_name"))
-    lxc.add("# base meno")
-    lxc.add("lxc.cgroup.devices.allow", "meno")
+    lxc = Linux::Lxc.file(File.join(@temp_dir, 'real_name'))
+    lxc.add('# base meno')
+    lxc.add('lxc.cgroup.devices.allow', 'meno')
     lxc.write
-    lxc.real_fname = File.join(@temp_dir, "test_name")
-    incl = Linux::Lxc.new(File.join(@temp_dir, "test_incl"))
-    incl.real_fname = File.join(@temp_dir, "real_incl")
-    lxc.add("lxc.include", incl)
-    incl.add("# include meno")
-    incl.add("lxc.network.hwaddr", '00:16:3e:67:03:4a')
+    lxc.real_fname = File.join(@temp_dir, 'test_name')
+    incl = Linux::Lxc.file(File.join(@temp_dir, 'test_incl'))
+    incl.real_fname = File.join(@temp_dir, 'real_incl')
+    lxc.add('lxc.include', incl)
+    incl.add('# include meno')
+    incl.add('lxc.network.hwaddr', '00:16:3e:67:03:4a')
     lxc.write
-    assert_equal File.exists?(File.join(@temp_dir, "test_name")), true
-    assert_equal File.exists?(File.join(@temp_dir, "real_name")), true
-    assert_equal File.exists?(File.join(@temp_dir, "real_incl")), true
-    assert_equal File.exists?(File.join(@temp_dir, "test_incl")), false
-#    assert_raise do #Fails, no Exceptions are raised
+    assert_equal File.exist?(File.join(@temp_dir, 'test_name')), true
+    assert_equal File.exist?(File.join(@temp_dir, 'real_name')), true
+    assert_equal File.exist?(File.join(@temp_dir, 'real_incl')), true
+    assert_equal File.exist?(File.join(@temp_dir, 'test_incl')), false
+    #    assert_raise do #Fails, no Exceptions are raised
     begin
-      lxc = Linux::Lxc.parse(File.join(@temp_dir, "test_name"))
-      assert_equal "Doof", "Darf nie passieren"
+      lxc = Linux::Lxc.parse(File.join(@temp_dir, 'test_name'))
+      assert_equal 'Doof', 'Darf nie passieren'
     rescue Exception => e
       assert_equal e.instance_of?(Errno::ENOENT), true
-      assert_equal File.basename(e.message), "test_incl"
+      assert_equal File.basename(e.message), 'test_incl'
     end
-#    end
+    #    end
   end
 
   def test_lines
     lxc = Linux::Lxc.parse(@lxc_config)
     cnt = 0
-    lxc.all_lines{|line| cnt+=1 }
-    assert_equal cnt, 92
+    lxc.all_lines { |_line| cnt += 1 }
+    assert_equal cnt, 96
   end
 
   def test_files
     lxc = Linux::Lxc.parse(@lxc_config)
-    assert_equal lxc.files[0].value.file, @lxc_config
-    assert_equal File.basename(lxc.files[1].value.file), "ubuntu.common.conf"
-    assert_equal lxc.files.length, 2
+    files = lxc.index.files.keys
+    assert_equal files[0], @lxc_config
+    assert_equal files[1], @lxc_ubuntu_common_conf
+    assert_equal files[2], @lxc_common_conf_d_wildcard
+    assert_equal files.length, 3
   end
 
   def test_write
     lxc = Linux::Lxc.parse(@lxc_config)
-    lxc.file = "#{@lxc_config}.new"
     inc_file = "#{lxc.get('lxc.cgroup.devices.allow').first.lxc.file}.new"
     lxc.get('lxc.cgroup.devices.allow').first.lxc.file = inc_file
-    lxc.get('lxc.cgroup.devices.allow')[5].value='meno'
+    lxc.get('lxc.cgroup.devices.allow')[5].value = 'meno'
     assert_equal lxc.get('lxc.cgroup.devices.allow').values[5], 'meno'
 
-    lxc.get('lxc.network.hwaddr').first.value='construqt'
+    lxc.get('lxc.network.hwaddr').first.value = 'construqt'
     assert_equal lxc.get('lxc.network.hwaddr').values, ['construqt']
-
     lxc.write
 
     lxc_read = Linux::Lxc.parse(lxc.file)
@@ -239,9 +268,5 @@ SAMPLE
     assert_equal lxc_read.get('lxc.network.hwaddr').values, ['construqt']
     assert_equal lxc_read.get('lxc.network.hwaddr').first.file, lxc.file
     assert_equal lxc_read.get('lxc.network.hwaddr').first.line, 18
-
   end
-
-
 end
-
