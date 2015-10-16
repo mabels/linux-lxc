@@ -258,6 +258,8 @@ SAMPLE
 
     lxc.get('lxc.network.hwaddr').first.value = 'construqt'
     assert_equal lxc.get('lxc.network.hwaddr').values, ['construqt']
+
+    assert_equal lxc.get('lxc.network.hwaddr').find{|i| i.value == 'construqt'}.value, 'construqt'
     lxc.write
 
     lxc_read = Linux::Lxc.parse(lxc.file)
