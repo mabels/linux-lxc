@@ -25,7 +25,11 @@ module Linux
 
       def to_s
         if value
-          "#{key} = #{value}"
+          if key == '#'
+            value
+          else
+            "#{key} = #{value}"
+          end
         else
           key
         end

@@ -204,6 +204,25 @@ SAMPLE
     lxc.get('lxc.network').comment!
     assert_equal lxc.get('#').length, 47
     assert_equal lxc.get('lxc.network'), nil
+    lxc.index.files.values.each do |file|
+      file.real_fname = ::File.join(::File.dirname(file.file), "-.#{::File.basename(file.file)}")
+    end
+    lxc.write
+    l2 = Linux::Lxc.parse(::File.join(::File.dirname(@lxc_config), "-.#{::File.basename(@lxc_config)}"))
+    assert_equal l2.lines.first.key, "#"
+    assert_equal l2.lines.first.value, "# Template used to create this container: /usr/share/lxc/templates/lxc-ubuntu"
+
+    lxc.index.files.values.each do |file|
+      file.file = ::File.join(::File.dirname(file.file), "+.#{::File.basename(file.file)}")
+    end
+    lxc.write
+    l3 = Linux::Lxc.parse(::File.join(::File.dirname(@lxc_config), "+.#{::File.basename(@lxc_config)}"))
+    assert_equal l3.lines.first.key, "#"
+    assert_equal l3.lines.first.value, "# Template used to create this container: /usr/share/lxc/templates/lxc-ubuntu"
+    assert_equal ::File.basename(l3.index.files.values[1].file), "+.ubuntu.common.conf"
+    assert_equal l3.index.files.values[1].lines.first.key, "#"
+    assert_equal l3.index.files.values[1].lines.first.value, "# Default pivot location"
+
   end
 
   def test_real_fname
