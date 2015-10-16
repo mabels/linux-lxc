@@ -1,18 +1,4 @@
-#      def glob?
-#        @used_glob
-#      end
-
-#      def get_entries
-#        entries = []
-#        if ::File.directory?(file)
-#          @used_glob = true
-#          entries += ::Dir.glob(::File.join(file, "*")).select{|f| ::File.file?(f) }
-#        elsif ::File.file?(file)
-#          entries += [file]
-#        end
-#        entries
-#      end
-
+require 'fileutils'
 
 module Linux
   module Lxc

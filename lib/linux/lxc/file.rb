@@ -1,3 +1,4 @@
+require 'fileutils'
 
 module Linux
   module Lxc
