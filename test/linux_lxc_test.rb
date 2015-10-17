@@ -290,4 +290,12 @@ SAMPLE
     assert_equal lxc_read.get('lxc.network.hwaddr').first.file, lxc.file
     assert_equal lxc_read.get('lxc.network.hwaddr').first.line, 18
   end
+
+  def test_numeric_prefix_order
+    assert_equal Linux::Lxc.numeric_prefix_order(["100_a", "1_b", "34d"]), ["1_b","34d","100_a"]
+    assert_equal Linux::Lxc.numeric_prefix_order(["1_c", "1_a", "1a"]), ["1_a","1_c","1a"]
+    assert_equal Linux::Lxc.numeric_prefix_order(["000100_a", "000001_b", "034d"]), ["000001_b","034d","000100_a"]
+    assert_equal Linux::Lxc.numeric_prefix_order(["foo","100_a", "000001_b", "bar", "34d"]), ["000001_b","34d","100_a","bar", "foo"]
+    assert_equal Linux::Lxc.numeric_prefix_order(["foo","yyy", "bar"]), ["bar", "foo", "yyy"]
+  end
 end

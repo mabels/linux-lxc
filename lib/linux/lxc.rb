@@ -7,12 +7,28 @@ require_relative 'lxc/index'
 
 module Linux
   module Lxc
+    def self.numeric_prefix_order(data)
+      data.sort do |a,b|
+        a_m = a.match(/^(\d+)(.*)$/)
+        b_m = b.match(/^(\d+)(.*)$/)
+        if a_m && b_m
+          ret = a_m[1].to_i <=> b_m[1].to_i
+          if ret == 0
+            ret = a_m[2] <=> b_m[2]
+          end
+          ret
+        else
+          a <=> b
+        end
+      end
+    end
+
     def self.parse(file, index = Index.new)
       if ::File.directory?(file)
         fname = file
         entries = ::Dir.glob(::File.join(file, '*.conf')).select { |f| ::File.file?(f) }
         dir = index.get_directory(fname)
-        entries.each do |entry|
+        numeric_prefix_order(entries).each do |entry|
           dir.add_file(entry).parse
         end
         return dir
