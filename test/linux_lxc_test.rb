@@ -203,6 +203,7 @@ SAMPLE
     assert_equal lxc.get('#').length, 43
     lxc.get('lxc.network').comment!
     assert_equal lxc.get('#').length, 47
+    assert_equal lxc.get('#')[45].to_s, '# lxc.network.link = lxcbr0'
     assert_equal lxc.get('lxc.network'), nil
     lxc.index.files.values.each do |file|
       file.real_fname = ::File.join(::File.dirname(file.file), "-.#{::File.basename(file.file)}")

@@ -18,8 +18,9 @@ module Linux
         return if @key == '#'
         # remove from index
         lxc.remove_from_index(self)
+        uncomment = to_s
         @key = '#'
-        @value = '# ' + to_s
+        @value = '# ' + uncomment
         lxc.add_to_index(self)
       end
 
