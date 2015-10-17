@@ -124,7 +124,7 @@ lxc.include = #{File.join(@temp_dir, 'common.conf.d')}
 SAMPLE
     FileUtils.mkdir_p File.join(@temp_dir, 'empty.conf.d')
     FileUtils.mkdir_p File.join(@temp_dir, 'common.conf.d')
-    @lxc_common_conf_d_wildcard = File.join(@temp_dir, 'common.conf.d', 'wildcard')
+    @lxc_common_conf_d_wildcard = File.join(@temp_dir, 'common.conf.d', 'wildcard.conf')
     File.write(@lxc_common_conf_d_wildcard, <<SAMPLE)
 lxc.wildcard.loaded = true
 SAMPLE
@@ -159,7 +159,7 @@ SAMPLE
     lxc = Linux::Lxc.file(File.join(@temp_dir, 'base.f'))
     lxc.add('# base meno')
     lxc.add('lxc.cgroup.devices.allow', 'meno')
-    incl = Linux::Lxc.file(File.join(@temp_dir, 'incl.f'))
+    incl = Linux::Lxc.file(File.join(@temp_dir, 'incl.f.conf'))
     lxc.add('lxc.include', incl)
     incl.add('# include meno')
     incl.add('lxc.network.hwaddr', '00:16:3e:67:03:4a')
@@ -171,7 +171,7 @@ SAMPLE
     lxc.add('lxc.include', scratch_d)
 
 
-    scratch_file = scratch_d.add_file(File.join(@temp_dir, 'scratch.d', 'file.f'))
+    scratch_file = scratch_d.add_file(File.join(@temp_dir, 'scratch.d', 'file.conf'))
     scratch_file.add('# include scratch')
     scratch_file.add('lxc.scratch_file', 'it_is_scratch_file')
     lxc.write
