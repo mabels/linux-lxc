@@ -10,7 +10,7 @@ module Linux
     def self.parse(file, index = Index.new)
       if ::File.directory?(file)
         fname = file
-        entries = ::Dir.glob(::File.join(file, '*')).select { |f| ::File.file?(f) }
+        entries = ::Dir.glob(::File.join(file, '*.conf')).select { |f| ::File.file?(f) }
         dir = index.get_directory(fname)
         entries.each do |entry|
           dir.add_file(entry).parse
