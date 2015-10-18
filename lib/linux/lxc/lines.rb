@@ -14,6 +14,10 @@ module Linux
         @lines.each { |line| block.call(line) }
       end
 
+      def select(&block)
+        @lines.select { |line| block.call(line) }
+      end
+
       def find(&block)
         @lines.find(&block)
       end
