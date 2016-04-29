@@ -127,6 +127,8 @@ SAMPLE
     @lxc_common_conf_d_wildcard = File.join(@temp_dir, 'common.conf.d', 'wildcard.conf')
     File.write(@lxc_common_conf_d_wildcard, <<SAMPLE)
 lxc.wildcard.loaded = true
+lxc.hook.mount = /usr/share/lxcfs/lxc.mount.hook
+lxc.hook.post-stop = /usr/share/lxcfs/lxc.reboot.hook
 SAMPLE
   end
 
@@ -137,7 +139,7 @@ SAMPLE
   def test_reader
     lxc = Linux::Lxc.parse(@lxc_config)
 
-    assert_equal lxc.get('lxc').length, 41
+    assert_equal lxc.get('lxc').length, 43
     assert_equal lxc.get('lxc.network').length, 4
     assert_equal lxc.get('lxc.network.hwaddr').length, 1
     assert_equal lxc.get('lxc.network.murks'), nil
@@ -257,7 +259,7 @@ SAMPLE
     lxc = Linux::Lxc.parse(@lxc_config)
     cnt = 0
     lxc.all_lines { |_line| cnt += 1 }
-    assert_equal cnt, 96
+    assert_equal cnt, 98
   end
 
   def test_files
