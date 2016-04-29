@@ -100,7 +100,7 @@ module Linux
           elsif line.match(/^\s*#.*$/)
             self.add('#', line)
           else
-            match = line.match(/^\s*([a-z-_\.]+)\s*=\s*(.*)\s*$/)
+            match = line.match(/^\s*([a-z\-_\.]+)\s*=\s*(.*)\s*$/)
             throw "illegal line in #{@file}:#{@lines.length}" unless match
             if match[1] == 'lxc.include'
               self.add(match[1], Lxc.parse(match[2], index))
