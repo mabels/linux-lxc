@@ -2,8 +2,8 @@
 require 'rubygems'
 
 begin
-  require 'pry'
-rescue
+  require 'pryx'
+rescue Exception => e
   # it would be cool but-:)
 end
 
