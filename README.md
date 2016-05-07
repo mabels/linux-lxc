@@ -1,5 +1,7 @@
 # Linux::Lxc
 
+[![Build Status](https://travis-ci.org/mabels/linux-lxc.svg?branch=master)](https://travis-ci.org/mabels/linux-lxc)
+
 This gem is able to parse a lxc-config file and than
 allow to modify the content of a lxc-config and write
 the in-memory represation back to disc.
