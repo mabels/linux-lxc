@@ -115,6 +115,17 @@ lxc.cgroup.devices.allow = c 10:232 rwm
 ## configuration file (uncommented).
 #lxc.cgroup.devices.allow = b 7:* rwm
 
+lxc.net.0.type = veth
+lxc.net.0.flags = up
+lxc.net.0.link = br-int
+lxc.net.0.hwaddr = 00:16:4e:80:72:ab
+lxc.net.0.name = br-int
+
+lxc.net.1.type = phys
+lxc.net.1.flags = up
+lxc.net.1.link = eth1
+lxc.net.1.name = lte
+
 # Blacklist some syscalls which are not safe in privileged
 # containers
 lxc.seccomp = /usr/share/lxc/config/common.seccomp
@@ -139,7 +150,7 @@ SAMPLE
   def test_reader
     lxc = Linux::Lxc.parse(@lxc_config)
 
-    assert_equal lxc.get('lxc').length, 43
+    assert_equal lxc.get('lxc').length, 52
     assert_equal lxc.get('lxc.network').length, 4
     assert_equal lxc.get('lxc.network.hwaddr').length, 1
     assert_equal lxc.get('lxc.network.murks'), nil
@@ -259,7 +270,7 @@ SAMPLE
     lxc = Linux::Lxc.parse(@lxc_config)
     cnt = 0
     lxc.all_lines { |_line| cnt += 1 }
-    assert_equal cnt, 98
+    assert_equal cnt, 109
   end
 
   def test_files
